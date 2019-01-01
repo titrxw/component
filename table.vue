@@ -16,10 +16,11 @@
       ref="table"
       border
       highlight-row
+      :no-data-text="noDataText"
       :columns="columns"
       :data="data.data"
     ></Table>
-    <Row type="flex" justify="space-between">
+    <Row type="flex" v-if="data.total" justify="space-between">
       <div>
         <slot name="foot-operate"></slot>
       </div>
@@ -49,7 +50,15 @@ export default {
         return [];
       }
     },
+    noDataText:{
+      type:String,
+      default:'暂无数据'
+    },
     getData: {
+      type: Function,
+      default: null
+    },
+    after: {
       type: Function,
       default: null
     },
@@ -64,7 +73,8 @@ export default {
         data: [],
         total: 0
       },
-      isSearch: false
+      isSearch: false,
+      fromSearch: false
     };
   },
   methods: {
@@ -90,6 +100,9 @@ export default {
       }
       result = await result[0](params);
       if (result) {
+        if (this.after) {
+          result = this.after(result)
+        }
         this.data = result;
       } else {
         this.data = {
@@ -109,17 +122,21 @@ export default {
     selectionAll(status) {
       this.$refs.table.selectAll(status);
     },
-    doSearch() {
+    async doSearch() {
+      this.fromSearch = true
       this.isSearch = true;
       this.page = 1;
-      this.fetchList();
+      await this.fetchList();
+      this.fromSearch = false
     }
   },
   watch: {
     search: {
       deep:true,
       handler(val) {
-        this.isSearch = false
+        if(!this.fromSearch) {
+          this.isSearch = false;
+        }
       }
     }
   }
